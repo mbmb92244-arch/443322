@@ -3,105 +3,64 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="description" content="מוטי דפדפנים בעם - דפדפן שרץ על השרתים שלנו. גולשים דרך האתר בלי להתקין דבר.">
-<title>מוטי דפדפנים בעם</title>
+<title>דפדפן מרוחק - מוטי דפדפנים בעם</title>
 <style>
-  :root { --ink:#1d2433; --muted:#5b6475; --accent:#2563eb; --accent-soft:#e8efff; --bg:#f7f8fb; --card:#fff; --line:#e3e6ee; }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { font-family:system-ui,-apple-system,"Segoe UI",Arial,"Heebo",sans-serif; color:var(--ink); background:var(--bg); line-height:1.6; }
-  header { display:flex; justify-content:space-between; align-items:center; padding:16px 6vw; background:var(--card); border-bottom:1px solid var(--line); position:sticky; top:0; z-index:10; }
-  .brand { font-weight:700; font-size:1.1rem; }
-  nav a { color:var(--ink); text-decoration:none; margin-inline-start:22px; font-size:0.95rem; }
-  nav a:hover { color:var(--accent); }
-  .hero { padding:96px 6vw 80px; text-align:center; background:linear-gradient(180deg, var(--accent-soft), var(--bg)); }
-  .eyebrow { display:inline-block; color:var(--accent); font-weight:600; margin-bottom:14px; }
-  .hero h1 { font-size:clamp(2rem,5vw,3.4rem); line-height:1.2; font-weight:800; max-width:18ch; margin:0 auto 18px; }
-  .hero p { font-size:clamp(1.05rem,2vw,1.25rem); color:var(--muted); max-width:52ch; margin:0 auto 32px; }
-  .btn { display:inline-block; background:var(--accent); color:#fff; padding:14px 30px; border-radius:999px; text-decoration:none; font-weight:600; }
-  .btn:hover { opacity:0.92; }
-  .btn.ghost { background:transparent; color:var(--accent); border:2px solid var(--accent); margin-inline-start:12px; }
-  section { padding:72px 6vw; }
-  section h2 { text-align:center; font-size:1.9rem; margin-bottom:36px; }
-  .alt { background:var(--card); }
-  .about { max-width:720px; margin:0 auto; text-align:center; font-size:1.1rem; color:var(--muted); }
-  .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(230px,1fr)); gap:22px; max-width:1000px; margin:0 auto; }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:28px 24px; }
-  .card h3 { font-size:1.15rem; margin-bottom:8px; }
-  .card p { color:var(--muted); font-size:0.98rem; }
-  .steps { counter-reset:step; max-width:720px; margin:0 auto; list-style:none; }
-  .steps li { counter-increment:step; padding:16px 0 16px 56px; position:relative; color:var(--muted); border-bottom:1px solid var(--line); }
-  .steps li::before { content:counter(step); position:absolute; right:0; top:16px; width:36px; height:36px; border-radius:50%; background:var(--accent-soft); color:var(--accent); font-weight:700; display:flex; align-items:center; justify-content:center; }
-  .steps strong { color:var(--ink); }
-  .cta { text-align:center; }
-  footer { text-align:center; padding:28px 6vw; color:var(--muted); font-size:0.9rem; border-top:1px solid var(--line); background:var(--card); }
-  @media (max-width:600px) { nav a { margin-inline-start:12px; font-size:0.85rem; } .btn.ghost { margin-inline-start:0; margin-top:12px; display:inline-block; } }
+  body { margin:0; font-family:system-ui,Arial,sans-serif; background:#eef0f4; }
+  #bar { display:flex; gap:8px; padding:8px; background:#fff; border-bottom:1px solid #ddd; }
+  #bar input { flex:1; padding:8px; font-size:16px; border:1px solid #ccc; border-radius:6px; }
+  #bar button { padding:8px 18px; background:#2563eb; color:#fff; border:0; border-radius:6px; cursor:pointer; }
+  #msg { color:#b00; padding:4px 10px; min-height:1.5em; }
+  #screen { width:100%; display:block; background:#fff; cursor:pointer; outline:none; }
 </style>
 </head>
 <body>
+<form id="bar">
+  <input id="url" dir="ltr" placeholder="הקלידו כתובת, למשל https://example.com">
+  <button>גלש</button>
+</form>
+<div id="msg"></div>
+<img id="screen" tabindex="0" alt="מסך הדפדפן">
+<script>
+const img = document.getElementById('screen');
+const urlBox = document.getElementById('url');
+const msg = document.getElementById('msg');
+const proto = location.protocol === 'https:' ? 'wss' : 'ws';
+const ws = new WebSocket(`${proto}://${location.host}/session`);
+const send = o => { if (ws.readyState === 1) ws.send(JSON.stringify(o)); };
 
-<header>
-  <div class="brand">מוטי דפדפנים בעם</div>
-  <nav>
-    <a href="#about">אודות</a>
-    <a href="#benefits">היתרונות</a>
-    <a href="#how">איך זה עובד</a>
-  </nav>
-</header>
+ws.onmessage = e => {
+  const m = JSON.parse(e.data);
+  if (m.type === 'frame') {
+    img.src = 'data:image/jpeg;base64,' + m.image;
+    urlBox.value = m.url;
+    msg.textContent = '';
+  } else if (m.type === 'error') {
+    msg.textContent = m.message;
+  }
+};
+ws.onclose = () => { msg.textContent = 'החיבור נסגר. רעננו את הדף כדי להתחיל מחדש.'; };
 
-<main>
-  <div class="hero">
-    <span class="eyebrow">שירותי דפדפן מרוחק</span>
-    <h1>גלשו באינטרנט דרך הדפדפן שלנו</h1>
-    <p>דפדפן שרץ על השרתים שלנו. נכנסים לאתר, ומשתמשים בו בלי להתקין או להוריד דבר.</p>
-    <a class="btn" href="https://mutti-browser-service.onrender.com/">נסו את הדפדפן</a>
-    <a class="btn ghost" href="#how">איך זה עובד</a>
-  </div>
+document.getElementById('bar').onsubmit = e => {
+  e.preventDefault();
+  let u = urlBox.value.trim();
+  if (!/^https?:\/\//.test(u)) u = 'https://' + u;
+  send({ type: 'navigate', url: u });
+};
 
-  <section id="about">
-    <h2>אודות</h2>
-    <p class="about">
-      מוטי דפדפנים בעם מפעילה דפדפן שרץ על השרתים שלנו. הגולשים נכנסים לאתר שלנו ומשתמשים בדפדפן דרכו.
-      הכתובת בדפדפן שלהם לא משתנה, והם לא צריכים להתקין דבר.
-    </p>
-  </section>
+img.onclick = e => {
+  const r = img.getBoundingClientRect();
+  send({ type: 'click', x: (e.clientX - r.left) * 1280 / r.width, y: (e.clientY - r.top) * 800 / r.height });
+};
 
-  <section id="benefits" class="alt">
-    <h2>היתרונות שלנו</h2>
-    <div class="grid">
-      <div class="card">
-        <h3>בלי התקנה</h3>
-        <p>הגולשים לא צריכים להוריד או להתקין כלום כדי להשתמש בדפדפן שלנו.</p>
-      </div>
-      <div class="card">
-        <h3>הדפדפן רץ אצלנו</h3>
-        <p>הגלישה מתבצעת על השרתים שלנו, לא על המחשב של הגולש.</p>
-      </div>
-      <div class="card">
-        <h3>הכתובת נשארת</h3>
-        <p>הכתובת בדפדפן של הגולש לא משתנה כשהוא משתמש בדפדפן דרך האתר שלנו.</p>
-      </div>
-    </div>
-  </section>
+img.addEventListener('keydown', e => {
+  e.preventDefault();
+  send(e.key.length === 1 ? { type: 'type', text: e.key } : { type: 'key', key: e.key });
+});
 
-  <section id="how">
-    <h2>איך זה עובד</h2>
-    <ol class="steps">
-      <li><strong>נכנסים לאתר</strong><br>פותחים את האתר שלנו בדפדפן הרגיל שלכם, בלי התקנות.</li>
-      <li><strong>מקלידים כתובת</strong><br>כותבים את הכתובת שרוצים לגלוש אליה בשורה שבראש הדף.</li>
-      <li><strong>גולשים</strong><br>הדפדפן פועל על השרתים שלנו, ואתם רואים את המסך ושולטים בו בלחיצות, בהקלדה ובגלילה.</li>
-    </ol>
-  </section>
-
-  <section class="alt cta">
-    <h2>מוכנים לנסות?</h2>
-    <p class="about" style="margin-bottom:28px;">הדפדפן נפתח ישירות באתר, בלי התקנה.</p>
-    <a class="btn" href="https://mutti-browser-service.onrender.com/">פתחו את הדפדפן</a>
-  </section>
-</main>
-
-<footer>
-  © מוטי דפדפנים בעם
-</footer>
-
+img.addEventListener('wheel', e => {
+  e.preventDefault();
+  send({ type: 'scroll', dy: e.deltaY });
+}, { passive: false });
+</script>
 </body>
 </html>
